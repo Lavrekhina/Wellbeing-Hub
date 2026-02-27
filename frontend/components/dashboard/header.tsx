@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 
 export function Header() {
   return (
-    <header className="glass-sidebar flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-sidebar-border px-4 lg:px-8">
+    <header className="glass-sidebar flex h-18 shrink-0 items-center justify-between gap-4 border-b border-sidebar-border px-4 lg:px-8">
       {/* Search */}
       <div className="relative flex-1 max-w-lg">
         <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

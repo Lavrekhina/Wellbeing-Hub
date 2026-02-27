@@ -62,7 +62,7 @@ export function Sidebar({ className }: { className?: string }) {
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:rounded-full"
               )}
             >
-              <item.icon className="size-[18px]" />
+              <item.icon className="size-4.5" />
               {item.label}
             </Link>
           )
@@ -77,7 +77,7 @@ export function Sidebar({ className }: { className?: string }) {
             href={item.href}
             className="flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium text-sidebar-foreground transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
-            <item.icon className="size-[18px]" />
+            <item.icon className="size-4.5" />
             {item.label}
           </Link>
         ))}

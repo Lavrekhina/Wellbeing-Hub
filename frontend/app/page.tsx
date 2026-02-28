@@ -18,12 +18,16 @@ import { BurnoutChart } from "@/components/dashboard/burnout-chart"
 import { TodaysActivities } from "@/components/dashboard/todays-activities"
 import { RecentJournalEntries } from "@/components/dashboard/recent-journal"
 import { HelpfulResources } from "@/components/dashboard/helpful-resources"
+import { ConsentModal } from "@/components/dashboard/consent-modal"
 
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="flex h-dvh overflow-hidden">
+
+      <ConsentModal />
+      
       {/* Desktop Sidebar */}
       <Sidebar className="hidden lg:flex" />
 

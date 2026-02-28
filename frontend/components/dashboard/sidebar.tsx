@@ -13,7 +13,7 @@ import {
   HelpCircle,
 } from "lucide-react"
 
-const navItems = [
+const employeeNavItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Activities", href: "/activities", icon: Activity },
   { label: "Journal", href: "/journal", icon: BookOpen },
@@ -21,13 +21,21 @@ const navItems = [
   { label: "Resources", href: "/resources", icon: Heart },
 ]
 
+const managerNavItems = [
+  { label: "Dashboard", href: "/manager", icon: LayoutDashboard },
+  { label: "Team Wellbeing", href: "/manager/team", icon: Activity },
+  { label: "Reports", href: "/manager/reports", icon: BookOpen },
+]
+
 const bottomItems = [
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Help", href: "/help", icon: HelpCircle },
 ]
 
-export function Sidebar({ className }: { className?: string }) {
+export function Sidebar({ className, role = "employee" }: { className?: string, role?: string }) {
   const pathname = usePathname()
+
+  const navItems = role === "manager" ? managerNavItems : employeeNavItems
 
   return (
     <aside

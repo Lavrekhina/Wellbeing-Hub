@@ -14,6 +14,7 @@ app = FastAPI(title=settings.app_name)
 
 # Register feature routers with the main app
 # These routers define grouped endpoints (e.g., /api/checkins, /api/dashboard)
+# Keeping router registration centralized here makes integration wiring explicit.
 app.include_router(checkins_router)
 app.include_router(dashboard_router)
 

@@ -43,16 +43,19 @@ def get_hr_department_risk_summary(
             detail="Failed to load HR dashboard aggregates",
         )
 
+    # Keep only each user's latest department snapshot.
     latest_department_by_user = {}
     for survey in latest_surveys:
         if survey.user_id not in latest_department_by_user:
             latest_department_by_user[survey.user_id] = survey.department_id
 
+    # Keep only each user's latest risk assessment.
     latest_assessment_by_user = {}
     for assessment in latest_assessments:
         if assessment.user_id not in latest_assessment_by_user:
             latest_assessment_by_user[assessment.user_id] = assessment
 
+    # Merge user-level latest records into department cohorts.
     grouped = defaultdict(list)
     for user_id, department_id in latest_department_by_user.items():
         if department_id is None:
@@ -68,6 +71,7 @@ def get_hr_department_risk_summary(
 
     for department_id in sorted(grouped.keys()):
         assessments = grouped[department_id]
+        # Enforce k-anonymity style threshold for HR views.
         if len(assessments) < min_group_size:
             excluded_count += 1
             continue
@@ -78,6 +82,7 @@ def get_hr_department_risk_summary(
         low_count = sum(1 for item in assessments if item.risk_level == "low")
         avg_risk_score = sum(item.risk_score for item in assessments) / response_count
 
+        # Expose anonymized labels instead of raw department identifiers.
         included_departments.append(
             {
                 "department_label": f"group_{display_index}",
@@ -122,6 +127,7 @@ def get_dashboard_summary(user_id: int = Path(gt=0), db: Session = Depends(get_d
         HTTPException 404: If the user has no survey responses
     """
     try:
+        # Dashboard summary is built from each domain's latest record.
         latest_response = (
             db.query(SurveyResponse)
             .filter(SurveyResponse.user_id == user_id)
@@ -143,6 +149,7 @@ def get_dashboard_summary(user_id: int = Path(gt=0), db: Session = Depends(get_d
 
         top_recommendations = []
         if latest_assessment is not None:
+            # UI needs only top items; keep payload concise.
             recommendation_rows = (
                 db.query(Recommendation)
                 .filter(Recommendation.assessment_id == latest_assessment.assessment_id)

@@ -40,17 +40,27 @@ def calculate_risk(answers: Iterable[float]) -> RiskScoreResult:
     if not values:
         return RiskScoreResult(risk_score=0.0, risk_level="low")
 
-    # Compute average response value
+    # Compute average response value and intensity indicators.
     average_answer = sum(values) / len(values)
+    max_answer = max(values)
+    min_answer = min(values)
+    spread = max_answer - min_answer
 
-    # Normalize score to 0–100 range (assuming 0–5 input scale)
-    # Clamp ensures score never exceeds bounds
-    risk_score = max(0.0, min(100.0, average_answer * 20.0))
+    # Basic tuning:
+    # - Average carries most weight.
+    # - Peak stress pushes score up.
+    # - Large spread indicates unstable wellbeing pattern.
+    normalized_average = (average_answer / 5.0) * 100.0
+    normalized_peak = (max_answer / 5.0) * 100.0
+    normalized_spread = (spread / 5.0) * 100.0
+
+    risk_score = (normalized_average * 0.7) + (normalized_peak * 0.2) + (normalized_spread * 0.1)
+    risk_score = max(0.0, min(100.0, risk_score))
 
     # Determine categorical risk level based on thresholds
-    if risk_score >= 70:
+    if risk_score >= 68:
         risk_level = "high"
-    elif risk_score >= 40:
+    elif risk_score >= 38:
         risk_level = "medium"
     else:
         risk_level = "low"

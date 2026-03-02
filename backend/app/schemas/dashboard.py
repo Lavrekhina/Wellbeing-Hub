@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -14,3 +14,17 @@ class DashboardSummaryResponse(BaseModel):
 
 class DashboardRecommendationsResponse(BaseModel):
     recommendations: List[str]
+
+
+class DepartmentRiskAggregate(BaseModel):
+    department_label: str
+    response_count: int
+    avg_risk_score: float
+    high_risk_ratio: float
+    risk_level_breakdown: Dict[str, int]
+
+
+class HrDepartmentRiskSummaryResponse(BaseModel):
+    min_group_size: int
+    excluded_departments: int
+    departments: List[DepartmentRiskAggregate]

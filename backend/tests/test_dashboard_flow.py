@@ -2,6 +2,7 @@ from backend.app.models.question_response import QuestionResponse
 from backend.app.models.recommendation import Recommendation
 from backend.app.models.risk_assessment import RiskAssessment
 from backend.app.models.survey_response import SurveyResponse
+from backend.app.models.consent_record import ConsentRecord
 
 
 def test_submit_checkin_persists_records_and_returns_ai_output(client, db_session):
@@ -9,6 +10,8 @@ def test_submit_checkin_persists_records_and_returns_ai_output(client, db_sessio
     payload = {
         "user_id": 101,
         "survey_id": 1,
+        "department_id": 7,
+        "consent_granted": True,
         "answers": [
             {"question_id": 1, "answer_value": 4.0},
             {"question_id": 2, "answer_value": 5.0},
@@ -34,6 +37,7 @@ def test_submit_checkin_persists_records_and_returns_ai_output(client, db_sessio
     assert db_session.query(QuestionResponse).count() == 3
     assert db_session.query(RiskAssessment).count() == 1
     assert db_session.query(Recommendation).count() >= 1
+    assert db_session.query(ConsentRecord).count() == 1
 
 
 def test_dashboard_summary_returns_latest_values(client):
@@ -41,6 +45,8 @@ def test_dashboard_summary_returns_latest_values(client):
     submit_payload = {
         "user_id": 222,
         "survey_id": 10,
+        "department_id": 3,
+        "consent_granted": True,
         "answers": [
             {"question_id": 11, "answer_value": 3.0},
             {"question_id": 12, "answer_value": 4.0},
@@ -68,6 +74,8 @@ def test_submit_checkin_rejects_duplicate_question_ids(client):
     payload = {
         "user_id": 333,
         "survey_id": 20,
+        "department_id": 3,
+        "consent_granted": True,
         "answers": [
             {"question_id": 1, "answer_value": 2.0},
             {"question_id": 1, "answer_value": 4.0},
@@ -87,3 +95,46 @@ def test_dashboard_summary_returns_404_when_user_has_no_data(client):
     # Assert: endpoint returns 404 with appropriate error message
     assert response.status_code == 404
     assert response.json()["detail"] == "No survey responses found for user"
+
+
+def test_submit_checkin_requires_consent(client):
+    payload = {
+        "user_id": 444,
+        "survey_id": 2,
+        "department_id": 4,
+        "consent_granted": False,
+        "answers": [
+            {"question_id": 1, "answer_value": 3.0},
+        ],
+    }
+
+    response = client.post("/api/checkins/submit", json=payload)
+    assert response.status_code == 403
+
+
+def test_hr_department_risk_summary_anonymizes_small_groups(client):
+    base_payload = {
+        "survey_id": 99,
+        "consent_granted": True,
+        "answers": [
+            {"question_id": 1, "answer_value": 4.0},
+            {"question_id": 2, "answer_value": 4.0},
+            {"question_id": 3, "answer_value": 5.0},
+        ],
+    }
+
+    for user_id in [1001, 1002, 1003]:
+        payload = dict(base_payload, user_id=user_id, department_id=10)
+        assert client.post("/api/checkins/submit", json=payload).status_code == 201
+
+    for user_id in [2001, 2002]:
+        payload = dict(base_payload, user_id=user_id, department_id=20)
+        assert client.post("/api/checkins/submit", json=payload).status_code == 201
+
+    response = client.get("/api/dashboard/hr/department-risk-summary?min_group_size=3")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["excluded_departments"] == 1
+    assert len(body["departments"]) == 1
+    assert body["departments"][0]["department_label"].startswith("group_")

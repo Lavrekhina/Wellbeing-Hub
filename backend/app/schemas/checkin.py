@@ -11,8 +11,8 @@ class AnswerInput(BaseModel):
     # Unique identifier of the question being answered (must be positive)
     question_id: int = Field(gt=0)
 
-    # Numeric value representing the user's response
-    answer_value: float
+    # Numeric value representing the user's response on a 0-5 scale.
+    answer_value: float = Field(ge=0, le=5)
 
 
 class CheckinSubmitRequest(BaseModel):
@@ -30,6 +30,12 @@ class CheckinSubmitRequest(BaseModel):
 
     # Survey being answered (must be positive)
     survey_id: int = Field(gt=0)
+
+    # Department id captured for HR aggregate metrics.
+    department_id: int = Field(gt=0)
+
+    # Explicit consent gate for storing wellbeing check-in data.
+    consent_granted: bool
 
     # At least one answer is required
     answers: List[AnswerInput] = Field(min_length=1)
@@ -70,3 +76,10 @@ class CheckinSubmitResponse(BaseModel):
 
     # Default state before risk processing completes
     risk_level: str = "pending"
+
+
+class ConsentStatusResponse(BaseModel):
+    user_id: int
+    consent_type: str
+    granted: bool
+    captured_at: str

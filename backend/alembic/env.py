@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from backend.app.core.config import settings
 from backend.app.core.database import Base
-from backend.app.models import question_response, recommendation, risk_assessment, survey_response
+from backend.app.models import consent_record, question_response, recommendation, risk_assessment, survey_response
 
 # Alembic Config object, provides access to .ini file values and other context
 config = context.config

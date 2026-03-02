@@ -3,11 +3,16 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
+from backend.app.models.consent_record import ConsentRecord
 from backend.app.models.question_response import QuestionResponse
 from backend.app.models.recommendation import Recommendation
 from backend.app.models.risk_assessment import RiskAssessment
 from backend.app.models.survey_response import SurveyResponse
-from backend.app.schemas.checkin import CheckinSubmitRequest, CheckinSubmitResponse
+from backend.app.schemas.checkin import (
+    CheckinSubmitRequest,
+    CheckinSubmitResponse,
+    ConsentStatusResponse,
+)
 from backend.app.services.recommendation import generate_recommendations
 from backend.app.services.risk_scoring import calculate_risk
 
@@ -50,6 +55,12 @@ def submit_checkin(
             detail="answers must contain at least one item",
         )
 
+    if not payload.consent_granted:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="consent is required before submitting a check-in",
+        )
+
     # Calculate the overall average score for the survey
     overall_score = sum(answer.answer_value for answer in payload.answers) / len(payload.answers)
 
@@ -63,6 +74,7 @@ def submit_checkin(
             survey_response = SurveyResponse(
                 survey_id=payload.survey_id,
                 user_id=payload.user_id,
+                department_id=payload.department_id,
                 overall_score=overall_score,
             )
             db.add(survey_response)
@@ -104,6 +116,13 @@ def submit_checkin(
             # Collect IDs for API response
             recommendation_ids = [row.recommendation_id for row in recommendation_rows]
 
+            consent_record = ConsentRecord(
+                user_id=payload.user_id,
+                consent_type="survey_checkin",
+                granted=True,
+            )
+            db.add(consent_record)
+
         # Return structured response
         return CheckinSubmitResponse(
             response_id=survey_response.response_id,
@@ -119,3 +138,28 @@ def submit_checkin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to persist check-in response",
         )
+
+
+@router.get(
+    "/consent/{user_id}/latest",
+    response_model=ConsentStatusResponse,
+)
+def get_latest_consent(user_id: int, db: Session = Depends(get_db)) -> ConsentStatusResponse:
+    record = (
+        db.query(ConsentRecord)
+        .filter(ConsentRecord.user_id == user_id)
+        .order_by(ConsentRecord.timestamp.desc())
+        .first()
+    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No consent record found for user",
+        )
+
+    return ConsentStatusResponse(
+        user_id=record.user_id,
+        consent_type=record.consent_type,
+        granted=record.granted,
+        captured_at=record.timestamp.isoformat(),
+    )

@@ -42,6 +42,14 @@ class SurveyResponse(Base):
         index=True,
     )
 
+    # Department identifier used for HR-level aggregation.
+    # Kept numeric and anonymized in HR endpoints.
+    department_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+
     # Timestamp when the survey was submitted
     # Stored with timezone awareness for consistency across environments
     submitted_at: Mapped[datetime] = mapped_column(

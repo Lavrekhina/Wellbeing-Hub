@@ -1,3 +1,4 @@
+from backend.app.models.consent_record import ConsentRecord
 from backend.app.models.question_response import QuestionResponse
 from backend.app.models.recommendation import Recommendation
 from backend.app.models.risk_assessment import RiskAssessment
@@ -8,4 +9,5 @@ __all__ = [
     "QuestionResponse",
     "RiskAssessment",
     "Recommendation",
+    "ConsentRecord",
 ]

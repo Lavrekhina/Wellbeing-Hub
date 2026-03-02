@@ -14,6 +14,7 @@ This folder contains backend integration tests for the check-in to dashboard flo
 4. Summary endpoint returns `404` for unknown users with no survey history.
 5. Check-in submission is blocked when consent is not granted.
 6. HR department risk summary excludes low-sample departments and returns anonymized groups.
+7. Latest consent endpoint returns captured consent and validates user identifiers.
 
 ## Test environment
 

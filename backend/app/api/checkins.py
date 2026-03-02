@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -144,22 +144,28 @@ def submit_checkin(
     "/consent/{user_id}/latest",
     response_model=ConsentStatusResponse,
 )
-def get_latest_consent(user_id: int, db: Session = Depends(get_db)) -> ConsentStatusResponse:
-    record = (
-        db.query(ConsentRecord)
-        .filter(ConsentRecord.user_id == user_id)
-        .order_by(ConsentRecord.timestamp.desc())
-        .first()
-    )
-    if record is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No consent record found for user",
+def get_latest_consent(user_id: int = Path(gt=0), db: Session = Depends(get_db)) -> ConsentStatusResponse:
+    try:
+        record = (
+            db.query(ConsentRecord)
+            .filter(ConsentRecord.user_id == user_id)
+            .order_by(ConsentRecord.timestamp.desc())
+            .first()
         )
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No consent record found for user",
+            )
 
-    return ConsentStatusResponse(
-        user_id=record.user_id,
-        consent_type=record.consent_type,
-        granted=record.granted,
-        captured_at=record.timestamp.isoformat(),
-    )
+        return ConsentStatusResponse(
+            user_id=record.user_id,
+            consent_type=record.consent_type,
+            granted=record.granted,
+            captured_at=record.timestamp.isoformat(),
+        )
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load consent status",
+        )

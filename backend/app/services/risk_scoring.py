@@ -33,8 +33,9 @@ def calculate_risk(answers: Iterable[float]) -> RiskScoreResult:
         RiskScoreResult: Contains the final risk score and risk level.
     """
 
-    # Convert iterable to list to allow multiple passes (len + sum)
-    values = list(answers)
+    # Normalize all incoming answers to a bounded 0-5 scale.
+    # This keeps scoring resilient if any upstream client bypasses validation.
+    values = [max(0.0, min(5.0, float(answer))) for answer in answers]
 
     # If no answers were provided, default to lowest risk
     if not values:

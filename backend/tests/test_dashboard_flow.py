@@ -112,6 +112,40 @@ def test_submit_checkin_requires_consent(client):
     assert response.status_code == 403
 
 
+def test_latest_consent_returns_record_after_submission(client):
+    payload = {
+        "user_id": 555,
+        "survey_id": 1,
+        "department_id": 4,
+        "consent_granted": True,
+        "answers": [
+            {"question_id": 1, "answer_value": 3.0},
+            {"question_id": 2, "answer_value": 3.5},
+        ],
+    }
+    assert client.post("/api/checkins/submit", json=payload).status_code == 201
+
+    response = client.get("/api/checkins/consent/555/latest")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["user_id"] == 555
+    assert body["consent_type"] == "survey_checkin"
+    assert body["granted"] is True
+    assert body["captured_at"] is not None
+
+
+def test_latest_consent_returns_404_for_unknown_user(client):
+    response = client.get("/api/checkins/consent/98765/latest")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "No consent record found for user"
+
+
+def test_latest_consent_rejects_invalid_user_id(client):
+    response = client.get("/api/checkins/consent/0/latest")
+    assert response.status_code == 422
+
+
 def test_hr_department_risk_summary_anonymizes_small_groups(client):
     base_payload = {
         "survey_id": 99,

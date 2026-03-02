@@ -17,8 +17,7 @@ from backend.app.schemas.dashboard import (
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
-# NOTE: Keep static HR route declared before dynamic "/{user_id}/..." routes
-# to avoid accidental path matching conflicts.
+
 @router.get("/hr/department-risk-summary", response_model=HrDepartmentRiskSummaryResponse)
 def get_hr_department_risk_summary(
     min_group_size: int = Query(default=3, ge=2, le=50),

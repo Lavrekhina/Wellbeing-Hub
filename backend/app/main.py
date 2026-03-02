@@ -30,4 +30,5 @@ def healthcheck() -> dict[str, str]:
     Returns:
         dict: Simple status confirmation.
     """
+    # Keep payload intentionally minimal for lightweight health probes.
     return {"status": "ok"}

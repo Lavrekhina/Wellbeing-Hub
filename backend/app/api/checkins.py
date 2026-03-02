@@ -14,24 +14,61 @@ from backend.app.services.risk_scoring import calculate_risk
 router = APIRouter(prefix="/api/checkins", tags=["checkins"])
 
 
-@router.post("/submit", response_model=CheckinSubmitResponse, status_code=status.HTTP_201_CREATED)
-def submit_checkin(payload: CheckinSubmitRequest, db: Session = Depends(get_db)) -> CheckinSubmitResponse:
-    if len(payload.answers) == 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="answers must contain at least one item")
+@router.post(
+    "/submit",
+    response_model=CheckinSubmitResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def submit_checkin(
+    payload: CheckinSubmitRequest,
+    db: Session = Depends(get_db),
+) -> CheckinSubmitResponse:
+    """
+    Submit a survey check-in.
 
+    Steps:
+    1. Validate answers are provided.
+    2. Calculate overall survey score and risk assessment.
+    3. Persist SurveyResponse, QuestionResponse, RiskAssessment, and Recommendations.
+    4. Return IDs and risk info for API response.
+
+    Args:
+        payload (CheckinSubmitRequest): The user's check-in data.
+        db (Session, optional): SQLAlchemy session injected by FastAPI.
+
+    Returns:
+        CheckinSubmitResponse: Contains survey response ID, risk assessment ID, recommendations, and risk level.
+
+    Raises:
+        HTTPException 400: If no answers are provided.
+        HTTPException 500: If database persistence fails.
+    """
+    # Guard clause: require at least one answer
+    if len(payload.answers) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="answers must contain at least one item",
+        )
+
+    # Calculate the overall average score for the survey
     overall_score = sum(answer.answer_value for answer in payload.answers) / len(payload.answers)
+
+    # Compute risk score and risk level using the service
     risk_result = calculate_risk(answer.answer_value for answer in payload.answers)
 
     try:
+        # Begin a transaction block to ensure atomic persistence
         with db.begin():
+            # Persist main survey response
             survey_response = SurveyResponse(
                 survey_id=payload.survey_id,
                 user_id=payload.user_id,
                 overall_score=overall_score,
             )
             db.add(survey_response)
-            db.flush()
+            db.flush()  # Flush to get survey_response.response_id
 
+            # Persist individual question responses
             question_responses = [
                 QuestionResponse(
                     response_id=survey_response.response_id,
@@ -42,14 +79,16 @@ def submit_checkin(payload: CheckinSubmitRequest, db: Session = Depends(get_db))
             ]
             db.add_all(question_responses)
 
+            # Persist risk assessment
             risk_assessment = RiskAssessment(
                 user_id=payload.user_id,
                 risk_level=risk_result.risk_level,
                 risk_score=risk_result.risk_score,
             )
             db.add(risk_assessment)
-            db.flush()
+            db.flush()  # Flush to get risk_assessment.assessment_id
 
+            # Generate and persist recommendations based on risk level
             recommendations_payload = generate_recommendations(risk_result.risk_level)
             recommendation_rows = [
                 Recommendation(
@@ -60,17 +99,21 @@ def submit_checkin(payload: CheckinSubmitRequest, db: Session = Depends(get_db))
                 for item in recommendations_payload
             ]
             db.add_all(recommendation_rows)
-            db.flush()
+            db.flush()  # Flush to get recommendation_ids
 
+            # Collect IDs for API response
             recommendation_ids = [row.recommendation_id for row in recommendation_rows]
 
+        # Return structured response
         return CheckinSubmitResponse(
             response_id=survey_response.response_id,
             risk_assessment_id=risk_assessment.assessment_id,
             recommendation_ids=recommendation_ids,
             risk_level=risk_assessment.risk_level,
         )
+
     except SQLAlchemyError:
+        # Rollback transaction on any database error
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

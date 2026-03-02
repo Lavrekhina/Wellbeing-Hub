@@ -1,3 +1,12 @@
+"""
+Integration tests for the end-to-end backend flow:
+- check-in submission
+- AI risk/recommendation persistence
+- employee dashboard endpoints
+- consent validation and retrieval
+- HR anonymized aggregate endpoint
+"""
+
 from backend.app.models.question_response import QuestionResponse
 from backend.app.models.recommendation import Recommendation
 from backend.app.models.risk_assessment import RiskAssessment
@@ -98,6 +107,7 @@ def test_dashboard_summary_returns_404_when_user_has_no_data(client):
 
 
 def test_submit_checkin_requires_consent(client):
+    # Arrange: valid shape payload, but consent explicitly denied
     payload = {
         "user_id": 444,
         "survey_id": 2,
@@ -108,11 +118,14 @@ def test_submit_checkin_requires_consent(client):
         ],
     }
 
+    # Act: attempt to submit check-in without consent
     response = client.post("/api/checkins/submit", json=payload)
+    # Assert: request is blocked by consent guard
     assert response.status_code == 403
 
 
 def test_latest_consent_returns_record_after_submission(client):
+    # Arrange: submit one consented check-in so consent history exists
     payload = {
         "user_id": 555,
         "survey_id": 1,
@@ -125,9 +138,11 @@ def test_latest_consent_returns_record_after_submission(client):
     }
     assert client.post("/api/checkins/submit", json=payload).status_code == 201
 
+    # Act: fetch latest consent status for the same user
     response = client.get("/api/checkins/consent/555/latest")
     body = response.json()
 
+    # Assert: endpoint returns normalized consent payload
     assert response.status_code == 200
     assert body["user_id"] == 555
     assert body["consent_type"] == "survey_checkin"
@@ -136,17 +151,22 @@ def test_latest_consent_returns_record_after_submission(client):
 
 
 def test_latest_consent_returns_404_for_unknown_user(client):
+    # Act: request consent status for user with no consent entries
     response = client.get("/api/checkins/consent/98765/latest")
+    # Assert: API correctly reports missing consent record
     assert response.status_code == 404
     assert response.json()["detail"] == "No consent record found for user"
 
 
 def test_latest_consent_rejects_invalid_user_id(client):
+    # Act: call endpoint with invalid path parameter
     response = client.get("/api/checkins/consent/0/latest")
+    # Assert: FastAPI path validation rejects non-positive IDs
     assert response.status_code == 422
 
 
 def test_hr_department_risk_summary_anonymizes_small_groups(client):
+    # Arrange: reusable payload for creating user-level submissions
     base_payload = {
         "survey_id": 99,
         "consent_granted": True,
@@ -157,17 +177,21 @@ def test_hr_department_risk_summary_anonymizes_small_groups(client):
         ],
     }
 
+    # Arrange: department 10 has 3 users (meets min_group_size=3)
     for user_id in [1001, 1002, 1003]:
         payload = dict(base_payload, user_id=user_id, department_id=10)
         assert client.post("/api/checkins/submit", json=payload).status_code == 201
 
+    # Arrange: department 20 has 2 users (should be excluded)
     for user_id in [2001, 2002]:
         payload = dict(base_payload, user_id=user_id, department_id=20)
         assert client.post("/api/checkins/submit", json=payload).status_code == 201
 
+    # Act: request HR aggregate endpoint with anonymization threshold
     response = client.get("/api/dashboard/hr/department-risk-summary?min_group_size=3")
     body = response.json()
 
+    # Assert: one small department filtered out and labels remain anonymized
     assert response.status_code == 200
     assert body["excluded_departments"] == 1
     assert len(body["departments"]) == 1

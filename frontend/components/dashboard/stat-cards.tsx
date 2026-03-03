@@ -24,15 +24,16 @@ export function StatCards() {
     fetchSummary()
   }, [])
 
-  const wellbeingValue = riskScore !== null
-    ? `${(100 - riskScore).toFixed(0)}/100`
-    : "8.2/10"
-
-  const wellbeingChange = riskLevel !== null
-    ? riskLevel === "low" ? "Low risk — keep it up!" 
-    : riskLevel === "medium" ? "Moderate risk — check in regularly"
-    : "High risk — please seek support"
-    : "Above your average"
+  const wellbeingValue =
+    riskScore !== null ? `${(100 - riskScore).toFixed(0)}/100` : "--";
+  const wellbeingChange =
+    riskLevel !== null
+      ? riskLevel === "low"
+        ? "Low risk — keep it up!"
+        : riskLevel === "medium"
+          ? "Moderate risk — check in regularly"
+          : "High risk — please seek support"
+      : "No check-in yet";
 
   const wellbeingChangeColor = riskLevel === "high"
     ? "text-red-500"

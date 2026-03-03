@@ -10,20 +10,10 @@ const HARDCODED_DEPARTMENT_ID = 1
 
 const moods = [
   { label: "Great", value: 0.0, color: "bg-amber-50", borderColor: "border-amber-200/60", emoji: "\u2600\uFE0F", hoverBg: "hover:bg-amber-100/80", selectedBg: "bg-amber-100" },
-  { label: "Good", value: 0.25, color: "bg-emerald-50", borderColor: "border-emerald-200/60", emoji: "\uD83D\uDE0A", hoverBg: "hover:bg-emerald-100/80", selectedBg: "bg-emerald-100" },
-  { label: "Okay", value: 0.5, color: "bg-blue-50", borderColor: "border-blue-200/60", emoji: "\uD83D\uDE10", hoverBg: "hover:bg-blue-100/80", selectedBg: "bg-blue-100" },
-  { label: "Low", value: 0.75, color: "bg-gray-50", borderColor: "border-gray-200/60", emoji: "\u2601\uFE0F", hoverBg: "hover:bg-gray-100/80", selectedBg: "bg-gray-100" },
-  { label: "Struggling", value: 1.0, color: "bg-purple-50", borderColor: "border-purple-200/60", emoji: "\uD83C\uDF27\uFE0F", hoverBg: "hover:bg-purple-100/80", selectedBg: "bg-purple-100" },
-]
-
-const weekDays = [
-  { day: "Mon", color: "bg-emerald-200/70" },
-  { day: "Tue", color: "bg-amber-200/70" },
-  { day: "Wed", color: "bg-blue-200/70" },
-  { day: "Thu", color: "bg-emerald-100/80" },
-  { day: "Fri", color: "bg-amber-200/70" },
-  { day: "Sat", color: "bg-emerald-100/80" },
-  { day: "Sun", color: "bg-gray-100/80" },
+  { label: "Good", value: 1.25, color: "bg-emerald-50", borderColor: "border-emerald-200/60", emoji: "\uD83D\uDE0A", hoverBg: "hover:bg-emerald-100/80", selectedBg: "bg-emerald-100" },
+  { label: "Okay", value: 2.5, color: "bg-blue-50", borderColor: "border-blue-200/60", emoji: "\uD83D\uDE10", hoverBg: "hover:bg-blue-100/80", selectedBg: "bg-blue-100" },
+  { label: "Low", value: 3.75, color: "bg-gray-50", borderColor: "border-gray-200/60", emoji: "\u2601\uFE0F", hoverBg: "hover:bg-gray-100/80", selectedBg: "bg-gray-100" },
+  { label: "Struggling", value: 5.0, color: "bg-purple-50", borderColor: "border-purple-200/60", emoji: "\uD83C\uDF27\uFE0F", hoverBg: "hover:bg-purple-100/80", selectedBg: "bg-purple-100" },
 ]
 
 export function MoodTracker() {
@@ -91,18 +81,6 @@ export function MoodTracker() {
         {submitting && (
           <p className="text-xs text-muted-foreground">Saving...</p>
         )}
-
-        <div className="space-y-3">
-          <h4 className="text-sm font-bold text-foreground">This Week</h4>
-          <div className="flex gap-2">
-            {weekDays.map((item) => (
-              <div key={item.day} className="flex flex-1 flex-col items-center gap-1.5">
-                <div className={`h-16 w-full rounded-xl ${item.color} transition-colors duration-200`} />
-                <span className="text-xs text-muted-foreground">{item.day}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </CardContent>
     </Card>
   )

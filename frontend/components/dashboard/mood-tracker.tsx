@@ -20,21 +20,24 @@ export function MoodTracker() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState(false)
 
   async function handleMoodSelect(label: string, value: number) {
     setSelectedMood(label)
     setSubmitting(true)
+    setError(false)
     try {
       await submitCheckin(
         HARDCODED_USER_ID,
         HARDCODED_SURVEY_ID,
         HARDCODED_DEPARTMENT_ID,
         true,
-        [{ question_id: 1, answer_value: value }]
-      )
+        [{ question_id: 1, answer_value: value }],
+      );
       setSubmitted(true)
-    } catch {
-      // silent fail for now
+    } catch (err) {
+      console.error(err)
+      setError(true)
     } finally {
       setSubmitting(false)
     }
@@ -75,6 +78,12 @@ export function MoodTracker() {
         {submitted && (
           <p className="text-xs font-medium text-emerald-600">
             ✓ Check-in saved successfully
+          </p>
+        )}
+
+        {error && (
+          <p className="text-xs font-medium text-destructive">
+            ✕ Failed to save check-in. Please ensure you have granted consent in settings.
           </p>
         )}
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import { getLatestConsent, submitCheckin } from "@/lib/api"
 
 const HARDCODED_USER_ID = 1
@@ -10,6 +11,7 @@ const HARDCODED_USER_ID = 1
 export function ConsentModal() {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     async function checkConsent() {
@@ -36,12 +38,16 @@ export function ConsentModal() {
       true,
       [{ question_id: 1, answer_value: 0.7 }]
     )
-  } catch {
-    // silent fail for now
-  } finally {
-    setOpen(false)
+      setOpen(false)
+    } catch {
+      setOpen(false)
+    }
   }
-}
+
+  function handleDecline() {
+    setOpen(false)
+    router.push("/login")
+  }
 
   if (loading) return null
   if (!open) return null
@@ -111,7 +117,7 @@ export function ConsentModal() {
           <Button
             variant="outline"
             className="flex-1 rounded-2xl py-3 text-sm font-semibold"
-            onClick={() => setOpen(false)}
+            onClick={handleDecline}
           >
             Decline
           </Button>

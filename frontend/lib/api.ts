@@ -40,3 +40,9 @@ export async function getLatestConsent(userId: number) {
   if (!res.ok) throw new Error("Failed to fetch consent status")
   return res.json()
 }
+
+export async function getDepartmentRiskSummary(minGroupSize: number = 3) {
+  const res = await fetch(`${API_BASE}/api/dashboard/hr/department-risk-summary?min_group_size=${minGroupSize}`)
+  if (!res.ok) throw new Error("Failed to fetch department risk summary")
+  return res.json()
+}

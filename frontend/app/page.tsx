@@ -15,7 +15,7 @@ import { MoodTracker } from "@/components/dashboard/mood-tracker"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 import { StatCards } from "@/components/dashboard/stat-cards"
 import { BurnoutChart } from "@/components/dashboard/burnout-chart"
-import { TodaysActivities } from "@/components/dashboard/todays-activities"
+import { Recommendations } from "@/components/dashboard/recommendations"
 import { RecentJournalEntries } from "@/components/dashboard/recent-journal"
 import { HelpfulResources } from "@/components/dashboard/helpful-resources"
 import { ConsentModal } from "@/components/dashboard/consent-modal"
@@ -77,7 +77,7 @@ export default function DashboardPage() {
             {/* Burnout Chart + Today's Activities */}
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_400px]">
               <BurnoutChart />
-              <TodaysActivities />
+              <Recommendations />
             </div>
 
             {/* Journal Entries + Resources */}

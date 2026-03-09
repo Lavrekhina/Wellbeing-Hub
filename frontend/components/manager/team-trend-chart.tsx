@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   AreaChart,
@@ -10,8 +11,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
+import { getDepartmentRiskSummary } from "@/lib/api"
 
-const data = [
+const fallbackData = [
   { week: "Week 1", avgRisk: 28 },
   { week: "Week 2", avgRisk: 32 },
   { week: "Week 3", avgRisk: 30 },
@@ -22,16 +24,48 @@ const data = [
 ]
 
 export function TeamTrendChart() {
+  const [data, setData] = useState(fallbackData)
+  const [usingRealData, setUsingRealData] = useState(false)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await getDepartmentRiskSummary(3)
+        if (response.departments && response.departments.length > 0) {
+          const mapped = response.departments.map((dept: {
+            department_label: string
+            avg_risk_score: number
+          }, index: number) => ({
+            week: dept.department_label,
+            avgRisk: Math.round(dept.avg_risk_score),
+          }))
+          setData(mapped)
+          setUsingRealData(true)
+        }
+      } catch {
+        // keep fallback
+      }
+    }
+    fetchData()
+  }, [])
+
   return (
     <Card className="py-6">
       <CardContent className="space-y-4">
-        <div>
-          <h3 className="text-xl font-semibold text-foreground">
-            Team Wellbeing Trend
-          </h3>
-          <p className="text-sm text-muted-foreground font-medium">
-            Average anonymised risk score across department — last 7 weeks
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-foreground">
+              Team Wellbeing Trend
+            </h3>
+            <p className="text-sm text-muted-foreground font-medium">
+              Average anonymised risk score across department — last 7 weeks
+            </p>
+          </div>
+          {!usingRealData && (
+            <span className="text-xs text-muted-foreground italic">
+              Sample data
+            </span>
+          )}
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -92,7 +126,12 @@ export function TeamTrendChart() {
                 strokeWidth={2.5}
                 fill="url(#teamRiskGradient)"
                 dot={{ r: 3.5, fill: "#7c3aed", strokeWidth: 0 }}
-                activeDot={{ r: 5.5, fill: "#7c3aed", strokeWidth: 2.5, stroke: "white" }}
+                activeDot={{
+                  r: 5.5,
+                  fill: "#7c3aed",
+                  strokeWidth: 2.5,
+                  stroke: "white",
+                }}
               />
             </AreaChart>
           </ResponsiveContainer>

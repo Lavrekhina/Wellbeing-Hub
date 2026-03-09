@@ -1,24 +1,64 @@
 "use client"
 
-import { useState } from "react"
-import { ShieldCheck, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { getLatestConsent, submitCheckin } from "@/lib/api"
+
+const HARDCODED_USER_ID = 1
 
 export function ConsentModal() {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
+  useEffect(() => {
+    async function checkConsent() {
+      try {
+        const consent = await getLatestConsent(HARDCODED_USER_ID)
+        if (consent === null || !consent.granted) {
+          setOpen(true)
+        }
+      } catch {
+        setOpen(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    checkConsent()
+  }, [])
+
+  async function handleAccept() {
+  try {
+    await submitCheckin(
+      HARDCODED_USER_ID,
+      1,
+      1,
+      true,
+      [{ question_id: 1, answer_value: 0.7 }]
+    )
+      setOpen(false)
+    } catch {
+      setOpen(false)
+    }
+  }
+
+  function handleDecline() {
+    setOpen(false)
+    router.push("/login")
+  }
+
+  if (loading) return null
   if (!open) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="relative mx-4 w-full max-w-lg rounded-3xl bg-white p-8 shadow-2xl">
-        
-        {/* Icon */}
         <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-violet-50">
           <ShieldCheck className="size-7 text-violet-600" />
         </div>
 
-        {/* Title */}
         <h2 className="text-2xl font-bold text-foreground">
           Your Data, Your Control
         </h2>
@@ -26,9 +66,10 @@ export function ConsentModal() {
           Before you begin, please review how the Wellbeing Hub uses your data.
         </p>
 
-        {/* What we collect */}
         <div className="mt-6 space-y-2">
-          <p className="text-sm font-semibold text-foreground">What we collect:</p>
+          <p className="text-sm font-semibold text-foreground">
+            What we collect:
+          </p>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-violet-400" />
@@ -45,9 +86,10 @@ export function ConsentModal() {
           </ul>
         </div>
 
-        {/* Your rights */}
         <div className="mt-5 space-y-2">
-          <p className="text-sm font-semibold text-foreground">Your rights under GDPR:</p>
+          <p className="text-sm font-semibold text-foreground">
+            Your rights under GDPR:
+          </p>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-emerald-400" />
@@ -55,7 +97,8 @@ export function ConsentModal() {
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-emerald-400" />
-              You can withdraw consent and delete your data at any time via Settings
+              You can withdraw consent and delete your data at any time via
+              Settings
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1 size-1.5 shrink-0 rounded-full bg-emerald-400" />
@@ -64,18 +107,17 @@ export function ConsentModal() {
           </ul>
         </div>
 
-        {/* Buttons */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Button
             className="gradient-primary flex-1 rounded-2xl py-3 text-sm font-semibold text-white shadow-md"
-            onClick={() => setOpen(false)}
+            onClick={handleAccept}
           >
             I Accept
           </Button>
           <Button
             variant="outline"
             className="flex-1 rounded-2xl py-3 text-sm font-semibold"
-            onClick={() => setOpen(false)}
+            onClick={handleDecline}
           >
             Decline
           </Button>
@@ -86,5 +128,5 @@ export function ConsentModal() {
         </p>
       </div>
     </div>
-  )
+  );
 }

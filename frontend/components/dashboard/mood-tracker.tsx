@@ -2,42 +2,65 @@
 
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { submitCheckin } from "@/lib/api"
+
+const HARDCODED_USER_ID = 1
+const HARDCODED_SURVEY_ID = 1
+const HARDCODED_DEPARTMENT_ID = 1
 
 const moods = [
-  { label: "Great", color: "bg-amber-50", borderColor: "border-amber-200/60", emoji: "\u2600\uFE0F", hoverBg: "hover:bg-amber-100/80", selectedBg: "bg-amber-100" },
-  { label: "Good", color: "bg-emerald-50", borderColor: "border-emerald-200/60", emoji: "\uD83D\uDE0A", hoverBg: "hover:bg-emerald-100/80", selectedBg: "bg-emerald-100" },
-  { label: "Okay", color: "bg-blue-50", borderColor: "border-blue-200/60", emoji: "\uD83D\uDE10", hoverBg: "hover:bg-blue-100/80", selectedBg: "bg-blue-100" },
-  { label: "Low", color: "bg-gray-50", borderColor: "border-gray-200/60", emoji: "\u2601\uFE0F", hoverBg: "hover:bg-gray-100/80", selectedBg: "bg-gray-100" },
-  { label: "Struggling", color: "bg-purple-50", borderColor: "border-purple-200/60", emoji: "\uD83C\uDF27\uFE0F", hoverBg: "hover:bg-purple-100/80", selectedBg: "bg-purple-100" },
-]
-
-const weekDays = [
-  { day: "Mon", color: "bg-emerald-200/70" },
-  { day: "Tue", color: "bg-amber-200/70" },
-  { day: "Wed", color: "bg-blue-200/70" },
-  { day: "Thu", color: "bg-emerald-100/80" },
-  { day: "Fri", color: "bg-amber-200/70" },
-  { day: "Sat", color: "bg-emerald-100/80" },
-  { day: "Sun", color: "bg-gray-100/80" },
+  { label: "Great", value: 0.0, color: "bg-amber-50", borderColor: "border-amber-200/60", emoji: "\u2600\uFE0F", hoverBg: "hover:bg-amber-100/80", selectedBg: "bg-amber-100" },
+  { label: "Good", value: 1.25, color: "bg-emerald-50", borderColor: "border-emerald-200/60", emoji: "\uD83D\uDE0A", hoverBg: "hover:bg-emerald-100/80", selectedBg: "bg-emerald-100" },
+  { label: "Okay", value: 2.5, color: "bg-blue-50", borderColor: "border-blue-200/60", emoji: "\uD83D\uDE10", hoverBg: "hover:bg-blue-100/80", selectedBg: "bg-blue-100" },
+  { label: "Low", value: 3.75, color: "bg-gray-50", borderColor: "border-gray-200/60", emoji: "\u2601\uFE0F", hoverBg: "hover:bg-gray-100/80", selectedBg: "bg-gray-100" },
+  { label: "Struggling", value: 5.0, color: "bg-purple-50", borderColor: "border-purple-200/60", emoji: "\uD83C\uDF27\uFE0F", hoverBg: "hover:bg-purple-100/80", selectedBg: "bg-purple-100" },
 ]
 
 export function MoodTracker() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState(false)
+
+  async function handleMoodSelect(label: string, value: number) {
+    setSelectedMood(label)
+    setSubmitting(true)
+    setError(false)
+    try {
+      await submitCheckin(
+        HARDCODED_USER_ID,
+        HARDCODED_SURVEY_ID,
+        HARDCODED_DEPARTMENT_ID,
+        true,
+        [{ question_id: 1, answer_value: value }],
+      );
+      setSubmitted(true)
+    } catch (err) {
+      console.error(err)
+      setError(true)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <Card className="py-6">
       <CardContent className="space-y-5">
         <div>
-          <h3 className="text-2xl font-semibold text-foreground font-sans">How are you feeling today?</h3>
-          <p className="mt-1 text-sm text-muted-foreground font-medium">Track your mood to identify patterns</p>
+          <h3 className="text-2xl font-semibold text-foreground font-sans">
+            How are you feeling today?
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground font-medium">
+            Track your mood to identify patterns
+          </p>
         </div>
 
-        {/* Mood Selection - equal width square buttons */}
         <div className="grid grid-cols-5 gap-3">
           {moods.map((mood) => (
             <button
               key={mood.label}
-              onClick={() => setSelectedMood(mood.label)}
+              onClick={() => handleMoodSelect(mood.label, mood.value)}
+              disabled={submitting}
               className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all duration-200 hover:scale-105 hover:shadow-md ${mood.borderColor} ${mood.hoverBg} ${
                 selectedMood === mood.label
                   ? `${mood.selectedBg} border-opacity-100 shadow-md scale-105`
@@ -52,18 +75,21 @@ export function MoodTracker() {
           ))}
         </div>
 
-        {/* This Week */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-bold text-foreground">This Week</h4>
-          <div className="flex gap-2">
-            {weekDays.map((item) => (
-              <div key={item.day} className="flex flex-1 flex-col items-center gap-1.5">
-                <div className={`h-16 w-full rounded-xl ${item.color} transition-colors duration-200`} />
-                <span className="text-xs text-muted-foreground">{item.day}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {submitted && (
+          <p className="text-xs font-medium text-emerald-600">
+            ✓ Check-in saved successfully
+          </p>
+        )}
+
+        {error && (
+          <p className="text-xs font-medium text-destructive">
+            ✕ Failed to save check-in. Please ensure you have granted consent in settings.
+          </p>
+        )}
+
+        {submitting && (
+          <p className="text-xs text-muted-foreground">Saving...</p>
+        )}
       </CardContent>
     </Card>
   )

@@ -7,10 +7,22 @@ from backend.app.api.dashboard import router as dashboard_router
 # Import application settings (e.g., app name, environment config)
 from backend.app.core.config import settings
 
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # Create FastAPI application instance
 # Title is dynamically pulled from configuration settings
 app = FastAPI(title=settings.app_name)
+
+# Allow frontend dev server to communicate with the API
+# Required for cross-origin requests from Next.js (localhost:3000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Register feature routers with the main app
 # These routers define grouped endpoints (e.g., /api/checkins, /api/dashboard)

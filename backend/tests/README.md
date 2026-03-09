@@ -31,3 +31,16 @@ From repository root:
    - `pip install -r backend/requirements-dev.txt`
 2. Run:
    - `pytest backend/tests -q`
+
+## Demo preflight (quick smoke suite)
+
+Run the targeted smoke checks right before the presentation:
+
+- `pytest backend/tests/test_api_smoke.py -q`
+
+This validates:
+- health endpoint
+- check-in submit endpoint
+- consent latest endpoint
+- employee dashboard summary/recommendations
+- HR anonymized aggregate endpoint

@@ -48,6 +48,21 @@ def test_submit_checkin_persists_records_and_returns_ai_output(client, db_sessio
     assert db_session.query(Recommendation).count() >= 1
     assert db_session.query(ConsentRecord).count() == 1
 
+    # Assert: persisted rows are correctly linked by foreign keys.
+    response_id = body["response_id"]
+    assessment_id = body["risk_assessment_id"]
+
+    question_rows = db_session.query(QuestionResponse).all()
+    assert all(item.response_id == response_id for item in question_rows)
+
+    assessment_row = db_session.query(RiskAssessment).first()
+    assert assessment_row is not None
+    assert assessment_row.assessment_id == assessment_id
+    assert assessment_row.user_id == payload["user_id"]
+
+    recommendation_rows = db_session.query(Recommendation).all()
+    assert all(item.assessment_id == assessment_id for item in recommendation_rows)
+
 
 def test_dashboard_summary_returns_latest_values(client):
     # Arrange: submit a check-in so dashboard has data
@@ -148,6 +163,36 @@ def test_latest_consent_returns_record_after_submission(client):
     assert body["consent_type"] == "survey_checkin"
     assert body["granted"] is True
     assert body["captured_at"] is not None
+
+
+def test_latest_consent_returns_most_recent_record(client):
+    first_payload = {
+        "user_id": 556,
+        "survey_id": 1,
+        "department_id": 4,
+        "consent_granted": True,
+        "answers": [
+            {"question_id": 1, "answer_value": 2.0},
+        ],
+    }
+    second_payload = {
+        "user_id": 556,
+        "survey_id": 2,
+        "department_id": 4,
+        "consent_granted": True,
+        "answers": [
+            {"question_id": 2, "answer_value": 4.0},
+        ],
+    }
+
+    assert client.post("/api/checkins/submit", json=first_payload).status_code == 201
+    assert client.post("/api/checkins/submit", json=second_payload).status_code == 201
+
+    response = client.get("/api/checkins/consent/556/latest")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["user_id"] == 556
+    assert body["granted"] is True
 
 
 def test_latest_consent_returns_404_for_unknown_user(client):

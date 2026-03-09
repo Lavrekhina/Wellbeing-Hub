@@ -102,6 +102,13 @@ def submit_checkin(
 
             # Generate and persist recommendations based on risk level
             recommendations_payload = generate_recommendations(risk_result.risk_level)
+            if len(recommendations_payload) == 0:
+                recommendations_payload = [
+                    {
+                        "category": "maintenance",
+                        "recommendation_text": "Keep tracking your weekly wellbeing check-ins.",
+                    }
+                ]
             recommendation_rows = [
                 Recommendation(
                     assessment_id=risk_assessment.assessment_id,

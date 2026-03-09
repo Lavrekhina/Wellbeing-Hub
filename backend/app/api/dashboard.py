@@ -155,7 +155,7 @@ def get_dashboard_summary(user_id: int = Path(gt=0), db: Session = Depends(get_d
             recommendation_rows = (
                 db.query(Recommendation)
                 .filter(Recommendation.assessment_id == latest_assessment.assessment_id)
-                .order_by(Recommendation.created_at.desc())
+                .order_by(Recommendation.recommendation_id.desc())
                 .limit(3)
                 .all()
             )
@@ -206,7 +206,7 @@ def get_dashboard_recommendations(user_id: int = Path(gt=0), db: Session = Depen
         recommendation_rows = (
             db.query(Recommendation)
             .filter(Recommendation.assessment_id == latest_assessment.assessment_id)
-            .order_by(Recommendation.created_at.desc())
+            .order_by(Recommendation.recommendation_id.desc())
             .all()
         )
         return DashboardRecommendationsResponse(

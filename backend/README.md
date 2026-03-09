@@ -10,3 +10,13 @@
    - `alembic upgrade head`
 5. Start API:
    - `uvicorn app.main:app --reload`
+
+## Demo preflight
+
+Before presenting, run:
+
+- `python backend/scripts/demo_preflight.py`
+
+If your API runs on a different URL/port:
+
+- `python backend/scripts/demo_preflight.py http://localhost:8001`

@@ -28,6 +28,14 @@ def test_health_endpoint_smoke(client):
     assert response.json()["status"] == "ok"
 
 
+def test_readiness_endpoint_smoke(client):
+    response = client.get("/health/readiness")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ready"] is True
+    assert body["database"] == "ok"
+
+
 def test_checkin_submit_endpoint_smoke(client):
     body = _seed_checkin(client, user_id=7002, department_id=12)
     assert body["response_id"] > 0

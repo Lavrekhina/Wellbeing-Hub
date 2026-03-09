@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+from fastapi import status
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 # Import API route groups
 from backend.app.api.checkins import router as checkins_router
@@ -6,6 +9,7 @@ from backend.app.api.dashboard import router as dashboard_router
 
 # Import application settings (e.g., app name, environment config)
 from backend.app.core.config import settings
+from backend.app.core.database import engine
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -44,3 +48,32 @@ def healthcheck() -> dict[str, str]:
     """
     # Keep payload intentionally minimal for lightweight health probes.
     return {"status": "ok"}
+
+
+@app.get("/health/readiness", tags=["health"])
+def readiness_check() -> JSONResponse:
+    """
+    Readiness endpoint for demo preflight checks.
+    Verifies API process and database connectivity before live presentation.
+    """
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception as exc:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "ready": False,
+                "database": "down",
+                "reason": str(exc),
+            },
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "ready": True,
+            "database": "ok",
+            "service": "wellbeing-backend",
+        },
+    )

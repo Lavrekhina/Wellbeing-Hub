@@ -40,6 +40,7 @@ Run the targeted smoke checks right before the presentation:
 
 This validates:
 - health endpoint
+- readiness endpoint
 - check-in submit endpoint
 - consent latest endpoint
 - employee dashboard summary/recommendations

@@ -27,6 +27,11 @@ const managerNavItems = [
   { label: "Reports", href: "/manager/reports", icon: BookOpen },
 ]
 
+const hrNavItems = [
+  { label: "Organization Overview", href: "/hr", icon: LayoutDashboard },
+  { label: "Reports & Audits", href: "/resources", icon: BookOpen }, // Reuse existing icons
+]
+
 const bottomItems = [
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Help", href: "/help", icon: HelpCircle },
@@ -35,7 +40,9 @@ const bottomItems = [
 export function Sidebar({ className, role = "employee" }: { className?: string, role?: string }) {
   const pathname = usePathname()
 
-  const navItems = role === "manager" ? managerNavItems : employeeNavItems
+  let navItems = employeeNavItems
+  if (role === "manager") navItems = managerNavItems
+  if (role === "hr") navItems = hrNavItems
 
   return (
     <aside

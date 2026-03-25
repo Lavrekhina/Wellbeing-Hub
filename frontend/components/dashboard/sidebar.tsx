@@ -12,6 +12,7 @@ import {
   Settings,
   HelpCircle,
 } from "lucide-react"
+import { ShieldAlert, Users, Building2 } from "lucide-react"
 
 const employeeNavItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -32,6 +33,10 @@ const hrNavItems = [
   { label: "Reports & Audits", href: "/resources", icon: BookOpen }, // Reuse existing icons
 ]
 
+const adminNavItems = [
+  { label: "Admin Console", href: "/admin", icon: ShieldAlert },
+]
+
 const bottomItems = [
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Help", href: "/help", icon: HelpCircle },
@@ -43,6 +48,7 @@ export function Sidebar({ className, role = "employee" }: { className?: string, 
   let navItems = employeeNavItems
   if (role === "manager") navItems = managerNavItems
   if (role === "hr") navItems = hrNavItems
+  if (role === "admin") navItems = adminNavItems
 
   return (
     <aside

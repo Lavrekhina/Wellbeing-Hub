@@ -19,26 +19,22 @@ export function Header() {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-4">
-        <Link href="/notifications">
-          <Button variant="ghost" size="icon" className="relative rounded-2xl hover:bg-secondary">
-            <Bell className="size-5 text-muted-foreground" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive ring-2 ring-card" />
-            <span className="sr-only">Notifications</span>
-          </Button>
-        </Link>
+      <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+        <Button variant="ghost" size="icon" className="relative rounded-2xl cursor-default hover:bg-transparent">
+          <Bell className="size-5 text-muted-foreground" />
+        </Button>
 
-        <Link href="/profile" className="flex items-center gap-3">
-          <div className="hidden text-right sm:block">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden sm:block text-right">
             <p className="text-sm font-semibold text-foreground">Melisa Sistek</p>
-            <p className="text-xs text-muted-foreground">Member since Jan 2024</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Employee</p>
           </div>
-          <Avatar className="size-10 ring-2 ring-primary/20 ring-offset-2 ring-offset-card">
-            <AvatarFallback className="gradient-primary text-sm font-semibold text-primary-foreground">
+          <Avatar className="size-9 sm:size-10 ring-2 ring-primary/10">
+            <AvatarFallback className="gradient-primary text-xs font-semibold text-white">
               MS
             </AvatarFallback>
           </Avatar>
-        </Link>
+        </div>
       </div>
     </header>
   )

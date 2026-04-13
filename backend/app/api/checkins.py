@@ -105,6 +105,7 @@ def submit_checkin(
                 risk_result.risk_level,
                 risk_score=risk_result.risk_score,
                 answer_values=[answer.answer_value for answer in payload.answers],
+                overall_score=overall_score,
             )
             if len(recommendations_payload) == 0:
                 recommendations_payload = [

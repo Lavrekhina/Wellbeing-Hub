@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # When true, GET /api/metrics/risk-classifier returns hold-out accuracy/F1 on synthetic data.
     expose_ml_risk_metrics: bool = False
 
+    # When set (non-empty), /api/admin/* requires header X-Admin-Key with this value.
+    admin_api_key: str | None = None
+
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
         env_file=".env",              # Load environment variables from .env file

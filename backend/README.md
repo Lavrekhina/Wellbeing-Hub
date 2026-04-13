@@ -8,6 +8,7 @@
 3. Copy `.env.example` to `.env` and update values.
    - Optional: set `USE_ML_RISK_SCORING=true` to use the sklearn classifier (trained on synthetic rule-labelled data); default is rule-based only.
    - Optional: set `EXPOSE_ML_RISK_METRICS=true` to enable `GET /api/metrics/risk-classifier` (hold-out accuracy / F1 on synthetic rule-labelled data).
+   - Optional: set `ADMIN_API_KEY` to enable `GET /api/admin/overview` and `GET /api/admin/assessments/recent` (send header `X-Admin-Key`).
 4. Run migrations:
    - `alembic upgrade head`
 5. Start API:

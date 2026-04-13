@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 # Import API route groups
+from backend.app.api.admin import router as admin_router
 from backend.app.api.checkins import router as checkins_router
 from backend.app.api.dashboard import router as dashboard_router
 from backend.app.api.ml_metrics import router as ml_metrics_router
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(checkins_router)
 app.include_router(dashboard_router)
 app.include_router(ml_metrics_router)
+app.include_router(admin_router)
 
 
 @app.get("/health", tags=["health"])

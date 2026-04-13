@@ -31,12 +31,20 @@ class Settings(BaseSettings):
     # When set (non-empty), /api/admin/* requires header X-Admin-Key with this value.
     admin_api_key: str | None = None
 
+    # Comma-separated browser origins allowed for CORS (e.g. Next.js dev server).
+    cors_allow_origins: str = "http://localhost:3000"
+
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
         env_file=".env",              # Load environment variables from .env file
         env_file_encoding="utf-8",    # Encoding of the .env file
         case_sensitive=False,         # Environment variables are case-insensitive
     )
+
+    def resolved_cors_origins(self) -> list[str]:
+        parts = [p.strip() for p in self.cors_allow_origins.split(",")]
+        origins = [p for p in parts if p]
+        return origins if origins else ["http://localhost:3000"]
 
 
 # Singleton settings instance used across the application

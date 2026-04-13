@@ -11,8 +11,8 @@ from backend.app.services.risk_ml_metrics import evaluate_synthetic_holdout
 def test_evaluate_synthetic_holdout_matches_rule_labels_well():
     report = evaluate_synthetic_holdout(n_samples=3500, test_size=0.25, random_state=11)
     assert report["n_test"] > 0
-    assert report["accuracy"] >= 0.82
-    assert report["macro_f1"] >= 0.75
+    assert report["accuracy"] >= 0.88
+    assert report["macro_f1"] >= 0.82
     assert set(report["per_class"].keys()) == {"low", "medium", "high"}
 
 
@@ -30,5 +30,5 @@ def test_metrics_endpoint_returns_report_when_enabled(monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert "accuracy" in body
-    assert body["macro_f1"] >= 0.75
+    assert body["macro_f1"] >= 0.82
     assert body["per_class"]["low"]["support"] >= 0

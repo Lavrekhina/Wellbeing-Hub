@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # Should be overridden in production (e.g., PostgreSQL)
     database_url: str = "sqlite:///./wellbeing.db"
 
+    # When true, use sklearn LogisticRegression trained on synthetic rule-labelled data.
+    # When false or sklearn missing, rule-based scoring is used.
+    use_ml_risk_scoring: bool = False
+
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
         env_file=".env",              # Load environment variables from .env file

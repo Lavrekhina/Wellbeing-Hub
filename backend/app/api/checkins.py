@@ -14,7 +14,7 @@ from backend.app.schemas.checkin import (
     ConsentStatusResponse,
 )
 from backend.app.services.recommendation import generate_recommendations
-from backend.app.services.risk_scoring import calculate_risk
+from backend.app.services.risk_engine import compute_risk_for_checkin
 
 router = APIRouter(prefix="/api/checkins", tags=["checkins"])
 
@@ -64,8 +64,8 @@ def submit_checkin(
     # Calculate the overall average score for the survey
     overall_score = sum(answer.answer_value for answer in payload.answers) / len(payload.answers)
 
-    # Compute risk score and risk level using the service
-    risk_result = calculate_risk(answer.answer_value for answer in payload.answers)
+    # Compute risk score and risk level (rule-based by default; optional ML via settings)
+    risk_result = compute_risk_for_checkin([answer.answer_value for answer in payload.answers])
 
     try:
         # Begin a transaction block to ensure atomic persistence

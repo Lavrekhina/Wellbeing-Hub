@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # Comma-separated browser origins allowed for CORS (e.g. Next.js dev server).
     cors_allow_origins: str = "http://localhost:3000"
 
+    # deployment / ops (optional version string for readiness payloads and logs)
+    environment: str = "development"
+    app_version: str = ""
+
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
         env_file=".env",              # Load environment variables from .env file

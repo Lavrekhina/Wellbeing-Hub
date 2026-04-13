@@ -1,3 +1,6 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI
 from fastapi import status
 from fastapi.responses import JSONResponse
@@ -13,6 +16,27 @@ from backend.app.core.database import get_db
 
 from fastapi.middleware.cors import CORSMiddleware
 
+_LOG = logging.getLogger("uvicorn.error")
+
+
+def _readiness_extras() -> dict[str, str]:
+    out: dict[str, str] = {"environment": settings.environment}
+    ver = (settings.app_version or "").strip()
+    if ver:
+        out["version"] = ver
+    return out
+
+
+@asynccontextmanager
+async def _lifespan(_application: FastAPI):
+    _LOG.info(
+        "Starting %s (environment=%s)",
+        settings.app_name,
+        settings.environment,
+    )
+    yield
+    _LOG.info("Shutting down %s", settings.app_name)
+
 
 def create_app() -> FastAPI:
     """
@@ -21,7 +45,7 @@ def create_app() -> FastAPI:
     Tests and scripts can call this to obtain an isolated app instance; production
     uses the module-level `app` singleton for uvicorn.
     """
-    application = FastAPI(title=settings.app_name)
+    application = FastAPI(title=settings.app_name, lifespan=_lifespan)
 
     application.add_middleware(
         CORSMiddleware,
@@ -53,6 +77,7 @@ def create_app() -> FastAPI:
                     "ready": False,
                     "database": "down",
                     "reason": str(exc),
+                    **_readiness_extras(),
                 },
             )
 
@@ -62,6 +87,7 @@ def create_app() -> FastAPI:
                 "ready": True,
                 "database": "ok",
                 "service": "wellbeing-backend",
+                **_readiness_extras(),
             },
         )
 

@@ -4,6 +4,8 @@ These checks are intentionally lightweight and focus on endpoint availability
 and expected status/response shapes for the presentation flow.
 """
 
+from backend.app.core import config
+
 
 def _seed_checkin(client, user_id: int = 7001, department_id: int = 11) -> dict:
     payload = {
@@ -34,6 +36,14 @@ def test_readiness_endpoint_smoke(client):
     body = response.json()
     assert body["ready"] is True
     assert body["database"] == "ok"
+    assert "environment" in body
+
+
+def test_readiness_includes_version_when_set(client, monkeypatch):
+    monkeypatch.setattr(config.settings, "app_version", "9.9.9-test")
+    response = client.get("/health/readiness")
+    assert response.status_code == 200
+    assert response.json().get("version") == "9.9.9-test"
 
 
 def test_checkin_submit_endpoint_smoke(client):

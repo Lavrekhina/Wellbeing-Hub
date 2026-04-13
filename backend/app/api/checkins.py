@@ -101,7 +101,11 @@ def submit_checkin(
             db.flush()  # Flush to get risk_assessment.assessment_id
 
             # Generate and persist recommendations based on risk level
-            recommendations_payload = generate_recommendations(risk_result.risk_level)
+            recommendations_payload = generate_recommendations(
+                risk_result.risk_level,
+                risk_score=risk_result.risk_score,
+                answer_values=[answer.answer_value for answer in payload.answers],
+            )
             if len(recommendations_payload) == 0:
                 recommendations_payload = [
                     {

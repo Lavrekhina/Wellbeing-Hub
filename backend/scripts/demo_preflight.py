@@ -1,5 +1,5 @@
 """
-Run quick backend checks before live demo.
+Run quick backend checks before live demo (health, readiness, OpenAPI).
 
 Usage:
     python backend/scripts/demo_preflight.py
@@ -32,6 +32,7 @@ def main() -> int:
     checks = [
         ("health", f"{base_url}/health", 200),
         ("readiness", f"{base_url}/health/readiness", 200),
+        ("openapi", f"{base_url}/openapi.json", 200),
     ]
 
     has_failures = False

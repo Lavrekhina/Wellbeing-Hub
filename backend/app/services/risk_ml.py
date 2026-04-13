@@ -33,7 +33,7 @@ def is_available() -> bool:
     return _SKLEARN_OK
 
 
-def _feature_vector(values: List[float]) -> np.ndarray:
+def feature_vector(values: List[float]) -> np.ndarray:
     if not values:
         return np.zeros(5, dtype=np.float64)
     arr = np.clip(np.asarray(values, dtype=np.float64), 0.0, 5.0)
@@ -60,7 +60,7 @@ def _train_model() -> tuple:
         n_answers = int(rng.randint(1, 9))
         raw = rng.uniform(0.0, 5.0, size=n_answers).tolist()
         rule = calculate_risk(raw)
-        X_list.append(_feature_vector(raw))
+        X_list.append(feature_vector(raw))
         y_labels.append(rule.risk_level)
 
     X = np.vstack(X_list)
@@ -90,7 +90,7 @@ def predict_risk(answer_values: List[float]) -> RiskScoreResult:
     if not values:
         return RiskScoreResult(risk_score=0.0, risk_level="low")
 
-    feats = _feature_vector(values).reshape(1, -1)
+    feats = feature_vector(values).reshape(1, -1)
     pred_idx = int(_clf.predict(feats)[0])
     risk_level = str(_label_encoder.inverse_transform([pred_idx])[0])
 

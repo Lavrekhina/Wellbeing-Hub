@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # When false or sklearn missing, rule-based scoring is used.
     use_ml_risk_scoring: bool = False
 
+    # When true, GET /api/metrics/risk-classifier returns hold-out accuracy/F1 on synthetic data.
+    expose_ml_risk_metrics: bool = False
+
     # Pydantic settings configuration
     model_config = SettingsConfigDict(
         env_file=".env",              # Load environment variables from .env file

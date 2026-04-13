@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 # Import API route groups
 from backend.app.api.checkins import router as checkins_router
 from backend.app.api.dashboard import router as dashboard_router
+from backend.app.api.ml_metrics import router as ml_metrics_router
 
 # Import application settings (e.g., app name, environment config)
 from backend.app.core.config import settings
@@ -34,6 +35,7 @@ app.add_middleware(
 # Keeping router registration centralized here makes integration wiring explicit.
 app.include_router(checkins_router)
 app.include_router(dashboard_router)
+app.include_router(ml_metrics_router)
 
 
 @app.get("/health", tags=["health"])

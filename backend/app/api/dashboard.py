@@ -1,21 +1,21 @@
-from collections import defaultdict
-
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
-from backend.app.models.recommendation import Recommendation
-from backend.app.models.risk_assessment import RiskAssessment
-from backend.app.models.survey_response import SurveyResponse
 from backend.app.schemas.dashboard import (
     DashboardRecommendationsResponse,
     DashboardSummaryResponse,
     HrDepartmentRiskSummaryResponse,
 )
+from backend.app.services.dashboard_queries import (
+    get_latest_risk_assessment,
+    get_latest_survey_response,
+    list_recommendation_texts_for_assessment,
+)
+from backend.app.services.hr_department_summary import build_anonymized_department_rows
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
-
 
 
 @router.get("/hr/department-risk-summary", response_model=HrDepartmentRiskSummaryResponse)
@@ -28,138 +28,41 @@ def get_hr_department_risk_summary(
     Departments with fewer than min_group_size employees are excluded.
     """
     try:
-        latest_surveys = (
-            db.query(SurveyResponse)
-            .order_by(SurveyResponse.user_id.asc(), SurveyResponse.submitted_at.desc())
-            .all()
-        )
-        latest_assessments = (
-            db.query(RiskAssessment)
-            .order_by(RiskAssessment.user_id.asc(), RiskAssessment.generated_at.desc())
-            .all()
-        )
+        departments, excluded = build_anonymized_department_rows(db, min_group_size)
     except SQLAlchemyError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to load HR dashboard aggregates",
         )
 
-    # Keep only each user's latest department snapshot.
-    latest_department_by_user = {}
-    for survey in latest_surveys:
-        if survey.user_id not in latest_department_by_user:
-            latest_department_by_user[survey.user_id] = survey.department_id
-
-    # Keep only each user's latest risk assessment.
-    latest_assessment_by_user = {}
-    for assessment in latest_assessments:
-        if assessment.user_id not in latest_assessment_by_user:
-            latest_assessment_by_user[assessment.user_id] = assessment
-
-    # Merge user-level latest records into department cohorts.
-    grouped = defaultdict(list)
-    for user_id, department_id in latest_department_by_user.items():
-        if department_id is None:
-            continue
-        assessment = latest_assessment_by_user.get(user_id)
-        if assessment is None:
-            continue
-        grouped[department_id].append(assessment)
-
-    included_departments = []
-    excluded_count = 0
-    display_index = 1
-
-    for department_id in sorted(grouped.keys()):
-        assessments = grouped[department_id]
-        # Enforce k-anonymity style threshold for HR views.
-        if len(assessments) < min_group_size:
-            excluded_count += 1
-            continue
-
-        response_count = len(assessments)
-        high_count = sum(1 for item in assessments if item.risk_level == "high")
-        medium_count = sum(1 for item in assessments if item.risk_level == "medium")
-        low_count = sum(1 for item in assessments if item.risk_level == "low")
-        avg_risk_score = sum(item.risk_score for item in assessments) / response_count
-
-        # Expose anonymized labels instead of raw department identifiers.
-        included_departments.append(
-            {
-                "department_label": f"group_{display_index}",
-                "response_count": response_count,
-                "avg_risk_score": round(avg_risk_score, 2),
-                "high_risk_ratio": round(high_count / response_count, 3),
-                "risk_level_breakdown": {
-                    "high": high_count,
-                    "medium": medium_count,
-                    "low": low_count,
-                },
-            }
-        )
-        display_index += 1
-
-    # Response intentionally contains only aggregate metrics suitable for HR dashboards.
     return HrDepartmentRiskSummaryResponse(
         min_group_size=min_group_size,
-        excluded_departments=excluded_count,
-        departments=included_departments,
+        excluded_departments=excluded,
+        departments=departments,
     )
 
 
 @router.get("/{user_id}/summary", response_model=DashboardSummaryResponse)
 def get_dashboard_summary(user_id: int = Path(gt=0), db: Session = Depends(get_db)) -> DashboardSummaryResponse:
     """
-    Retrieve the latest dashboard summary for a user.
-
-    This includes:
-    - Most recent survey overall score
-    - Latest risk assessment (level and score)
-    - Top 3 recommendations
-    - Timestamp of the latest survey submission
-
-    Args:
-        user_id (int): ID of the user
-        db (Session): SQLAlchemy session injected by FastAPI
-
-    Returns:
-        DashboardSummaryResponse: Summary data for dashboard display
-
-    Raises:
-        HTTPException 404: If the user has no survey responses
+    Latest survey score, risk assessment, top recommendations, and last submission time.
     """
     try:
-        # Dashboard summary is built from each domain's latest record.
-        latest_response = (
-            db.query(SurveyResponse)
-            .filter(SurveyResponse.user_id == user_id)
-            .order_by(SurveyResponse.submitted_at.desc())
-            .first()
-        )
+        latest_response = get_latest_survey_response(db, user_id)
         if latest_response is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No survey responses found for user",
             )
 
-        latest_assessment = (
-            db.query(RiskAssessment)
-            .filter(RiskAssessment.user_id == user_id)
-            .order_by(RiskAssessment.generated_at.desc())
-            .first()
-        )
-
-        top_recommendations = []
+        latest_assessment = get_latest_risk_assessment(db, user_id)
+        top_recommendations: list[str] = []
         if latest_assessment is not None:
-            # UI needs only top items; keep payload concise.
-            recommendation_rows = (
-                db.query(Recommendation)
-                .filter(Recommendation.assessment_id == latest_assessment.assessment_id)
-                .order_by(Recommendation.recommendation_id.desc())
-                .limit(3)
-                .all()
+            top_recommendations = list_recommendation_texts_for_assessment(
+                db,
+                latest_assessment.assessment_id,
+                limit=3,
             )
-            top_recommendations = [item.recommendation_text for item in recommendation_rows]
 
         return DashboardSummaryResponse(
             latest_score=latest_response.overall_score,
@@ -168,6 +71,8 @@ def get_dashboard_summary(user_id: int = Path(gt=0), db: Session = Depends(get_d
             top_recommendations=top_recommendations,
             last_submitted_at=latest_response.submitted_at,
         )
+    except HTTPException:
+        raise
     except SQLAlchemyError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -176,42 +81,27 @@ def get_dashboard_summary(user_id: int = Path(gt=0), db: Session = Depends(get_d
 
 
 @router.get("/{user_id}/recommendations", response_model=DashboardRecommendationsResponse)
-def get_dashboard_recommendations(user_id: int = Path(gt=0), db: Session = Depends(get_db)) -> DashboardRecommendationsResponse:
-    """
-    Retrieve all recommendations for a user's latest risk assessment.
-
-    Args:
-        user_id (int): ID of the user
-        db (Session): SQLAlchemy session injected by FastAPI
-
-    Returns:
-        DashboardRecommendationsResponse: List of all recommendation texts
-
-    Raises:
-        HTTPException 404: If the user has no risk assessments
-    """
+def get_dashboard_recommendations(
+    user_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+) -> DashboardRecommendationsResponse:
+    """All recommendation texts for the user's latest risk assessment."""
     try:
-        latest_assessment = (
-            db.query(RiskAssessment)
-            .filter(RiskAssessment.user_id == user_id)
-            .order_by(RiskAssessment.generated_at.desc())
-            .first()
-        )
+        latest_assessment = get_latest_risk_assessment(db, user_id)
         if latest_assessment is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No risk assessments found for user",
             )
 
-        recommendation_rows = (
-            db.query(Recommendation)
-            .filter(Recommendation.assessment_id == latest_assessment.assessment_id)
-            .order_by(Recommendation.recommendation_id.desc())
-            .all()
+        texts = list_recommendation_texts_for_assessment(
+            db,
+            latest_assessment.assessment_id,
+            limit=None,
         )
-        return DashboardRecommendationsResponse(
-            recommendations=[item.recommendation_text for item in recommendation_rows]
-        )
+        return DashboardRecommendationsResponse(recommendations=texts)
+    except HTTPException:
+        raise
     except SQLAlchemyError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

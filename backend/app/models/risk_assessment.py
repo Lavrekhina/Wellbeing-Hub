@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Integer, String
+from sqlalchemy import CheckConstraint, DateTime, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.core.database import Base
@@ -18,6 +18,18 @@ class RiskAssessment(Base):
     """
 
     __tablename__ = "ai_risk_assessments"
+
+    __table_args__ = (
+        CheckConstraint("user_id > 0", name="ck_ai_risk_assessments_user_id_positive"),
+        CheckConstraint(
+            "risk_score >= 0 AND risk_score <= 100",
+            name="ck_ai_risk_assessments_risk_score_range",
+        ),
+        CheckConstraint(
+            "risk_level IN ('low', 'medium', 'high')",
+            name="ck_ai_risk_assessments_risk_level_allowed",
+        ),
+    )
 
     # Primary key identifier for the assessment
     assessment_id: Mapped[int] = mapped_column(

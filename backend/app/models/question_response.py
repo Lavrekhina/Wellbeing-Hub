@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer
+from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.core.database import Base
@@ -17,6 +17,18 @@ class QuestionResponse(Base):
     """
 
     __tablename__ = "question_responses"
+
+    __table_args__ = (
+        CheckConstraint(
+            "answer_value >= 0 AND answer_value <= 5",
+            name="ck_question_responses_answer_value_range",
+        ),
+        UniqueConstraint(
+            "response_id",
+            "question_id",
+            name="uq_question_responses_response_question",
+        ),
+    )
 
     # Primary key for this table
     question_response_id: Mapped[int] = mapped_column(

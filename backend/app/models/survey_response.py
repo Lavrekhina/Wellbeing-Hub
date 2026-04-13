@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Float, Integer
+from sqlalchemy import CheckConstraint, DateTime, Float, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.app.core.database import Base
@@ -19,6 +19,19 @@ class SurveyResponse(Base):
     """
 
     __tablename__ = "survey_responses"
+
+    __table_args__ = (
+        CheckConstraint("user_id > 0", name="ck_survey_responses_user_id_positive"),
+        CheckConstraint("survey_id > 0", name="ck_survey_responses_survey_id_positive"),
+        CheckConstraint(
+            "department_id IS NULL OR department_id > 0",
+            name="ck_survey_responses_department_id_positive",
+        ),
+        CheckConstraint(
+            "overall_score IS NULL OR (overall_score >= 0 AND overall_score <= 5)",
+            name="ck_survey_responses_overall_score_range",
+        ),
+    )
 
     # Primary key identifier for the survey submission
     response_id: Mapped[int] = mapped_column(

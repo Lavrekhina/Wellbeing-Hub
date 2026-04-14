@@ -1,2 +1,3 @@
-pytest
-httpx
+# Local dev and CI (install alongside backend/requirements.txt)
+pytest>=8.0
+httpx>=0.27

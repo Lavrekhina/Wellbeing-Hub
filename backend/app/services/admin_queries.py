@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import func
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from backend.app.models.recommendation import Recommendation
@@ -14,7 +14,6 @@ from backend.app.schemas.admin import (
     AdminRecentAssessmentsResponse,
     AdminRiskBreakdown,
 )
-from backend.app.services.risk_assessment_utils import latest_assessment_per_user
 
 
 def fetch_admin_overview(db: Session) -> AdminOverviewResponse:
@@ -22,26 +21,45 @@ def fetch_admin_overview(db: Session) -> AdminOverviewResponse:
     total_assessments = int(db.query(func.count(RiskAssessment.assessment_id)).scalar() or 0)
     total_recs = int(db.query(func.count(Recommendation.recommendation_id)).scalar() or 0)
 
-    ordered = (
-        db.query(RiskAssessment)
-        .order_by(RiskAssessment.user_id.asc(), RiskAssessment.generated_at.desc())
-        .all()
+    latest = (
+        select(
+            RiskAssessment.user_id.label("user_id"),
+            RiskAssessment.risk_level.label("risk_level"),
+            func.row_number()
+            .over(
+                partition_by=RiskAssessment.user_id,
+                order_by=RiskAssessment.generated_at.desc(),
+            )
+            .label("rn"),
+        )
+        .subquery()
     )
-    latest_by_user = latest_assessment_per_user(ordered)
-    breakdown = AdminRiskBreakdown()
-    for a in latest_by_user.values():
-        if a.risk_level == "high":
-            breakdown.high += 1
-        elif a.risk_level == "medium":
-            breakdown.medium += 1
-        else:
-            breakdown.low += 1
+
+    breakdown_row = (
+        db.execute(
+            select(
+                func.count(latest.c.user_id).label("users_with_latest_assessment"),
+                func.sum(case((latest.c.risk_level == "high", 1), else_=0)).label("high"),
+                func.sum(case((latest.c.risk_level == "medium", 1), else_=0)).label("medium"),
+                func.sum(case((latest.c.risk_level == "low", 1), else_=0)).label("low"),
+            ).where(latest.c.rn == 1)
+        )
+        .mappings()
+        .one()
+    )
+
+    breakdown = AdminRiskBreakdown(
+        high=int(breakdown_row["high"] or 0),
+        medium=int(breakdown_row["medium"] or 0),
+        low=int(breakdown_row["low"] or 0),
+    )
+    users_with_latest = int(breakdown_row["users_with_latest_assessment"] or 0)
 
     return AdminOverviewResponse(
         total_survey_responses=total_surveys,
         total_risk_assessments=total_assessments,
         total_recommendations=total_recs,
-        users_with_latest_assessment=len(latest_by_user),
+        users_with_latest_assessment=users_with_latest,
         latest_assessment_risk_breakdown=breakdown,
     )
 

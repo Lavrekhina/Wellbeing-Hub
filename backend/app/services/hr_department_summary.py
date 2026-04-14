@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from backend.app.models.risk_assessment import RiskAssessment
@@ -15,61 +14,91 @@ def build_anonymized_department_rows(
     min_group_size: int,
 ) -> tuple[list[dict], int]:
     """
-    Load latest survey (department) and latest assessment per user, group by department,
-    and return (included_department_payloads, excluded_department_count).
+    Build anonymized department aggregates from each user's latest survey + latest assessment.
+    Returns (included_department_payloads, excluded_department_count).
     """
-    latest_surveys = (
-        db.query(SurveyResponse)
-        .order_by(SurveyResponse.user_id.asc(), SurveyResponse.submitted_at.desc())
+    latest_survey = (
+        select(
+            SurveyResponse.user_id.label("user_id"),
+            SurveyResponse.department_id.label("department_id"),
+            func.row_number()
+            .over(
+                partition_by=SurveyResponse.user_id,
+                order_by=SurveyResponse.submitted_at.desc(),
+            )
+            .label("rn"),
+        )
+        .subquery()
+    )
+    latest_assessment = (
+        select(
+            RiskAssessment.user_id.label("user_id"),
+            RiskAssessment.risk_level.label("risk_level"),
+            RiskAssessment.risk_score.label("risk_score"),
+            func.row_number()
+            .over(
+                partition_by=RiskAssessment.user_id,
+                order_by=RiskAssessment.generated_at.desc(),
+            )
+            .label("rn"),
+        )
+        .subquery()
+    )
+
+    high = func.sum(case((latest_assessment.c.risk_level == "high", 1), else_=0)).label("high_count")
+    medium = func.sum(case((latest_assessment.c.risk_level == "medium", 1), else_=0)).label(
+        "medium_count"
+    )
+    low = func.sum(case((latest_assessment.c.risk_level == "low", 1), else_=0)).label("low_count")
+    response_count = func.count(latest_assessment.c.user_id).label("response_count")
+    avg_risk = func.avg(latest_assessment.c.risk_score).label("avg_risk_score")
+
+    rows = (
+        db.execute(
+            select(
+                latest_survey.c.department_id,
+                response_count,
+                avg_risk,
+                high,
+                medium,
+                low,
+            )
+            .select_from(latest_survey)
+            .join(
+                latest_assessment,
+                latest_assessment.c.user_id == latest_survey.c.user_id,
+            )
+            .where(latest_survey.c.rn == 1)
+            .where(latest_assessment.c.rn == 1)
+            .where(latest_survey.c.department_id.is_not(None))
+            .group_by(latest_survey.c.department_id)
+            .order_by(latest_survey.c.department_id.asc())
+        )
+        .mappings()
         .all()
     )
-    latest_assessments = (
-        db.query(RiskAssessment)
-        .order_by(RiskAssessment.user_id.asc(), RiskAssessment.generated_at.desc())
-        .all()
-    )
-
-    latest_department_by_user: dict[int, int | None] = {}
-    for survey in latest_surveys:
-        if survey.user_id not in latest_department_by_user:
-            latest_department_by_user[survey.user_id] = survey.department_id
-
-    latest_assessment_by_user: dict[int, RiskAssessment] = {}
-    for assessment in latest_assessments:
-        if assessment.user_id not in latest_assessment_by_user:
-            latest_assessment_by_user[assessment.user_id] = assessment
-
-    grouped: dict[int, list[RiskAssessment]] = defaultdict(list)
-    for user_id, department_id in latest_department_by_user.items():
-        if department_id is None:
-            continue
-        assessment = latest_assessment_by_user.get(user_id)
-        if assessment is None:
-            continue
-        grouped[department_id].append(assessment)
 
     included: list[dict] = []
     excluded_count = 0
     display_index = 1
 
-    for dept_key in sorted(grouped.keys()):
-        assessments = grouped[dept_key]
-        if len(assessments) < min_group_size:
+    for row in rows:
+        if int(row["response_count"]) < min_group_size:
             excluded_count += 1
             continue
 
-        response_count = len(assessments)
-        high_count = sum(1 for item in assessments if item.risk_level == "high")
-        medium_count = sum(1 for item in assessments if item.risk_level == "medium")
-        low_count = sum(1 for item in assessments if item.risk_level == "low")
-        avg_risk_score = sum(item.risk_score for item in assessments) / response_count
+        high_count = int(row["high_count"] or 0)
+        medium_count = int(row["medium_count"] or 0)
+        low_count = int(row["low_count"] or 0)
+        rc = int(row["response_count"])
+        avg_score = float(row["avg_risk_score"] or 0.0)
 
         included.append(
             {
                 "department_label": f"group_{display_index}",
-                "response_count": response_count,
-                "avg_risk_score": round(avg_risk_score, 2),
-                "high_risk_ratio": round(high_count / response_count, 3),
+                "response_count": rc,
+                "avg_risk_score": round(avg_score, 2),
+                "high_risk_ratio": round(high_count / rc, 3),
                 "risk_level_breakdown": {
                     "high": high_count,
                     "medium": medium_count,

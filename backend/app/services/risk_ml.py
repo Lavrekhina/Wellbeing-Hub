@@ -21,7 +21,9 @@ _MAX_ANSWERS = 500
 
 _clf = None
 _label_encoder = None
+_class_score_means = None
 _SKLEARN_OK = False
+_MIN_CONFIDENCE = 0.45
 
 try:
     from sklearn.linear_model import LogisticRegression
@@ -110,6 +112,7 @@ def _train_model() -> tuple:
     n_samples = 10_000
     X_list: list[np.ndarray] = []
     y_labels: list[str] = []
+    y_scores: list[float] = []
 
     for _ in range(n_samples):
         n_answers = int(rng.randint(1, 9))
@@ -117,6 +120,7 @@ def _train_model() -> tuple:
         rule = calculate_risk(raw)
         X_list.append(feature_vector(raw))
         y_labels.append(rule.risk_level)
+        y_scores.append(rule.risk_score)
 
     X = np.vstack(X_list)
     le = LabelEncoder()
@@ -129,16 +133,35 @@ def _train_model() -> tuple:
         solver="lbfgs",
     )
     clf.fit(X, y)
-    return clf, le
+    score_means: dict[str, float] = {}
+    for level in le.classes_:
+        idxs = [i for i, lab in enumerate(y_labels) if lab == level]
+        if not idxs:
+            continue
+        score_means[str(level)] = float(np.mean([y_scores[i] for i in idxs]))
+    # Safety fallback if anything is missing.
+    score_means.setdefault("low", 22.0)
+    score_means.setdefault("medium", 52.0)
+    score_means.setdefault("high", 82.0)
+    return clf, le, score_means
 
 
 def _ensure_model() -> None:
-    global _clf, _label_encoder
+    global _clf, _label_encoder, _class_score_means
     if _clf is not None:
         return
     if not _SKLEARN_OK:
         raise RuntimeError("scikit-learn is not installed")
-    _clf, _label_encoder = _train_model()
+    _clf, _label_encoder, _class_score_means = _train_model()
+
+
+def _risk_score_from_proba(proba: np.ndarray) -> float:
+    idx_to_level = {i: str(_label_encoder.classes_[i]) for i in range(len(_label_encoder.classes_))}
+    blended = sum(
+        float(proba[i]) * float(_class_score_means.get(idx_to_level[i], 50.0))
+        for i in range(len(proba))
+    )
+    return round(float(np.clip(blended, 0.0, 100.0)), 2)
 
 
 def predict_risk(answer_values: Any) -> RiskScoreResult:
@@ -152,20 +175,21 @@ def predict_risk(answer_values: Any) -> RiskScoreResult:
 
     _ensure_model()
     feats = feature_vector(values).reshape(1, -1)
-    pred_idx = int(_clf.predict(feats)[0])
-    risk_level = str(_label_encoder.inverse_transform([pred_idx])[0])
-
     proba = _clf.predict_proba(feats)[0]
-    class_scores = {"low": 22.0, "medium": 52.0, "high": 82.0}
-    idx_to_level = {i: _label_encoder.classes_[i] for i in range(len(_label_encoder.classes_))}
-    blended = sum(proba[i] * class_scores.get(idx_to_level[i], 50.0) for i in range(len(proba)))
-    risk_score = round(float(np.clip(blended, 0.0, 100.0)), 2)
+    risk_score = _risk_score_from_proba(proba)
 
+    # When the classifier is uncertain, defer to the rule-based scorer.
+    if float(np.max(proba)) < _MIN_CONFIDENCE:
+        return calculate_risk(values)
+
+    pred_idx = int(np.argmax(proba))
+    risk_level = str(_label_encoder.inverse_transform([pred_idx])[0])
     return RiskScoreResult(risk_score=risk_score, risk_level=risk_level)
 
 
 def reset_model_for_tests() -> None:
     """Clear cached model (tests only)."""
-    global _clf, _label_encoder
+    global _clf, _label_encoder, _class_score_means
     _clf = None
     _label_encoder = None
+    _class_score_means = None

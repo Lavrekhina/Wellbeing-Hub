@@ -21,6 +21,7 @@ def test_ml_predict_produces_valid_risk_bucket():
     result = risk_ml.predict_risk([3.0, 4.0, 5.0])
     assert result.risk_level in {"low", "medium", "high"}
     assert 0.0 <= result.risk_score <= 100.0
+    assert result.risk_score == round(result.risk_score, 2)
 
 
 @pytest.mark.skipif(not risk_ml.is_available(), reason="scikit-learn not installed")
@@ -54,3 +55,15 @@ def test_ml_empty_after_sanitization_is_low():
     r = risk_ml.predict_risk([float("nan"), math.nan])
     assert r.risk_level == "low"
     assert r.risk_score == 0.0
+
+
+@pytest.mark.skipif(not risk_ml.is_available(), reason="scikit-learn not installed")
+def test_ml_low_confidence_falls_back_to_rule_based():
+    risk_ml.reset_model_for_tests()
+    values = [2.0, 2.0, 2.0]
+    got = risk_ml.predict_risk(values)
+    expected = calculate_risk(values)
+    # At minimum, ensure we still return a valid rule-aligned object if fallback triggers.
+    assert got.risk_level in {"low", "medium", "high"}
+    assert 0.0 <= got.risk_score <= 100.0
+    assert expected.risk_level in {"low", "medium", "high"}

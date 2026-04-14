@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from backend.app.models.recommendation import Recommendation
@@ -9,7 +11,7 @@ from backend.app.models.risk_assessment import RiskAssessment
 from backend.app.models.survey_response import SurveyResponse
 
 
-def get_latest_survey_response(db: Session, user_id: int) -> SurveyResponse | None:
+def get_latest_survey_response(db: Session, user_id: int) -> Optional[SurveyResponse]:
     return (
         db.query(SurveyResponse)
         .filter(SurveyResponse.user_id == user_id)
@@ -18,7 +20,7 @@ def get_latest_survey_response(db: Session, user_id: int) -> SurveyResponse | No
     )
 
 
-def get_latest_risk_assessment(db: Session, user_id: int) -> RiskAssessment | None:
+def get_latest_risk_assessment(db: Session, user_id: int) -> Optional[RiskAssessment]:
     return (
         db.query(RiskAssessment)
         .filter(RiskAssessment.user_id == user_id)
@@ -31,7 +33,7 @@ def list_recommendation_texts_for_assessment(
     db: Session,
     assessment_id: int,
     *,
-    limit: int | None = None,
+    limit: Optional[int] = None,
 ) -> list[str]:
     q = (
         db.query(Recommendation)

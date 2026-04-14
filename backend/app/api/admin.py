@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,7 +20,7 @@ def _admin_key_configured() -> str:
 
 
 def verify_admin(
-    x_admin_key: Annotated[str | None, Header(alias="X-Admin-Key")] = None,
+    x_admin_key: Annotated[Optional[str], Header(alias="X-Admin-Key")] = None,
 ) -> None:
     expected = _admin_key_configured()
     if not x_admin_key or x_admin_key != expected:

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 
 def _rec(category: str, text: str) -> dict:
     return {"category": category, "recommendation_text": text}
 
 
-def _coerce_risk_level(risk_level: str, risk_score: float | None) -> str:
+def _coerce_risk_level(risk_level: str, risk_score: Optional[float]) -> str:
     label = (risk_level or "").strip().lower()
     if label in {"low", "medium", "high"}:
         return label
@@ -20,8 +20,8 @@ def _coerce_risk_level(risk_level: str, risk_score: float | None) -> str:
 
 
 def _signals(
-    answer_values: Sequence[float] | None,
-    overall_score: float | None,
+    answer_values: Optional[Sequence[float]],
+    overall_score: Optional[float],
 ) -> tuple[float, float, float, float, int]:
     if answer_values:
         vals = [max(0.0, min(5.0, float(v))) for v in answer_values]
@@ -39,9 +39,9 @@ def _signals(
 def generate_recommendations(
     risk_level: str,
     *,
-    risk_score: float | None = None,
-    answer_values: Sequence[float] | None = None,
-    overall_score: float | None = None,
+    risk_score: Optional[float] = None,
+    answer_values: Optional[Sequence[float]] = None,
+    overall_score: Optional[float] = None,
 ) -> List[dict]:
     """
     Build actionable recommendations from risk band, numeric score position, and
@@ -62,7 +62,7 @@ def generate_recommendations(
 
 def _finalize_recommendations(
     level: str,
-    risk_score: float | None,
+    risk_score: Optional[float],
     n: int,
     recs: List[dict],
 ) -> List[dict]:

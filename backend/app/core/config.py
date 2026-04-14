@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,7 +31,7 @@ class Settings(BaseSettings):
     expose_ml_risk_metrics: bool = False
 
     # When set (non-empty), /api/admin/* requires header X-Admin-Key with this value.
-    admin_api_key: str | None = None
+    admin_api_key: Optional[str] = None
 
     # Comma-separated browser origins allowed for CORS (e.g. Next.js dev server).
     cors_allow_origins: str = "http://localhost:3000"

@@ -7,37 +7,37 @@ import {
   LayoutDashboard,
   Activity,
   BookOpen,
-  CalendarDays,
   Heart,
   Settings,
   HelpCircle,
+  ShieldAlert,
+  BarChart3
 } from "lucide-react"
-import { ShieldAlert, Users, Building2 } from "lucide-react"
 
-const employeeNavItems = [
+// Employee gets the core wellbeing loop
+const employeeNavItems =[
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Activities", href: "/activities", icon: Activity },
-  { label: "Journal", href: "/journal", icon: BookOpen },
-  { label: "Appointments", href: "/appointments", icon: CalendarDays },
-  { label: "Resources", href: "/resources", icon: Heart },
+  { label: "Mindful Journal", href: "/journal", icon: BookOpen },
 ]
 
-const managerNavItems = [
-  { label: "Dashboard", href: "/manager", icon: LayoutDashboard },
-  { label: "Team Wellbeing", href: "/manager/team", icon: Activity },
-  { label: "Reports", href: "/manager/reports", icon: BookOpen },
+// Manager gets just their anonymized team view
+const managerNavItems =[
+  { label: "Team Wellbeing", href: "/manager", icon: BarChart3 },
 ]
 
-const hrNavItems = [
+// HR gets the global org view
+const hrNavItems =[
   { label: "Organization Overview", href: "/hr", icon: LayoutDashboard },
-  { label: "Reports & Audits", href: "/resources", icon: BookOpen }, // Reuse existing icons
 ]
 
-const adminNavItems = [
+// Admin gets the system and ML metrics
+const adminNavItems =[
   { label: "Admin Console", href: "/admin", icon: ShieldAlert },
 ]
 
-const bottomItems = [
+// Bottom items stay the same for everyone (Privacy and Help)
+const bottomItems =[
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Help", href: "/help", icon: HelpCircle },
 ]

@@ -3,9 +3,9 @@
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { UsersTable } from "@/components/admin/users-table"
-import { DepartmentsTable } from "@/components/admin/departments-table"
 import { ShieldAlert } from "lucide-react"
+import { AdminOverview } from "@/components/admin/admin-overview"
+import { MLMetrics } from "@/components/admin/ml-metrics"
 
 export default function AdminDashboardPage() {
   return (
@@ -27,24 +27,24 @@ export default function AdminDashboardPage() {
                   System Administration
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground font-medium">
-                  Manage users, departments, and system access levels
+                  Monitor system health, live assessments, and Machine Learning performance
                 </p>
               </div>
             </div>
 
-            {/* Tabs for Database Viewer */}
-            <Tabs defaultValue="users" className="w-full space-y-6">
+            {/* Tabs */}
+            <Tabs defaultValue="overview" className="w-full space-y-6">
               <TabsList className="bg-card border border-border/50 p-1 rounded-xl">
-                <TabsTrigger value="users" className="rounded-lg px-6">User Management</TabsTrigger>
-                <TabsTrigger value="departments" className="rounded-lg px-6">Departments</TabsTrigger>
+                <TabsTrigger value="overview" className="rounded-lg px-6">System Overview</TabsTrigger>
+                <TabsTrigger value="ml-metrics" className="rounded-lg px-6">ML Classifier Metrics</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="users" className="outline-none">
-                <UsersTable />
+              <TabsContent value="overview" className="outline-none">
+                <AdminOverview />
               </TabsContent>
 
-              <TabsContent value="departments" className="outline-none">
-                <DepartmentsTable />
+              <TabsContent value="ml-metrics" className="outline-none">
+                <MLMetrics />
               </TabsContent>
             </Tabs>
 

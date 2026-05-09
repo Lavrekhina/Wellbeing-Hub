@@ -32,6 +32,17 @@ export function AdminOverview() {
 
   if (loading) return <div className="p-8 text-center text-muted-foreground">Loading secure system data...</div>
 
+  const tally = assessments.reduce(
+  (acc, curr) => {
+    if (curr.risk_level === "high") acc.high++;
+    if (curr.risk_level === "medium") acc.medium++;
+    if (curr.risk_level === "low") acc.low++;
+    return acc;
+  },
+  { low: 0, medium: 0, high: 0 }
+);
+
+
   return (
     <div className="space-y-6">
       {/* High Level Stats */}
@@ -70,9 +81,15 @@ export function AdminOverview() {
         <CardHeader className="border-b border-border/50 pb-4 flex flex-row items-center justify-between">
           <CardTitle className="text-xl font-bold">Recent Risk Assessments</CardTitle>
           <div className="flex gap-2">
-            <Badge variant="outline" className="text-red-600 bg-red-50 border-red-200">High Risk: {overview?.latest_assessment_risk_breakdown?.high || 0}</Badge>
-            <Badge variant="outline" className="text-amber-600 bg-amber-50 border-amber-200">Med Risk: {overview?.latest_assessment_risk_breakdown?.medium || 0}</Badge>
-            <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">Low Risk: {overview?.latest_assessment_risk_breakdown?.low || 0}</Badge>
+            <Badge variant="outline" className="text-red-600 bg-red-50 border-red-200">
+              High Risk: {tally.high}
+            </Badge>
+            <Badge variant="outline" className="text-amber-600 bg-amber-50 border-amber-200">
+              Med Risk: {tally.medium}
+            </Badge>
+            <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">
+              Low Risk: {tally.low}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">

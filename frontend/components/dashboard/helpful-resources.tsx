@@ -48,7 +48,7 @@ export function HelpfulResources() {
         <div className="flex items-center justify-between">
           <h3 className="text-2xl font-semibold text-foreground font-sans">Helpful Resources</h3>
           <Link
-            href="/resources"
+            href="/activities"
             className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors duration-200"
           >
             Browse All
